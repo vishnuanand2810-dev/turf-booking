@@ -1,0 +1,80 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String?
+  email     String?   @unique
+  phone     String?   @unique
+  role      String    @default("USER")
+  createdAt DateTime  @default(now())
+  bookings  Booking[]
+}
+
+model Ground {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  city        String
+  address     String
+  lat         Float
+  lng         Float
+  pricePaise  Int
+  amenities   String    @default("[]")
+  images      String    @default("[]")
+  rating      Float     @default(4.8)
+  slots       Slot[]
+  bookings    Booking[]
+}
+
+model Slot {
+  id          String    @id @default(cuid())
+  groundId    String
+  ground      Ground    @relation(fields: [groundId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  pricePaise  Int
+  status      String    @default("available")
+  lockedUntil DateTime?
+  booking     Booking?
+
+  @@unique([groundId, startTime])
+}
+
+model Booking {
+  id                String    @id @default(cuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id])
+  guestName         String?
+  guestPhone        String?
+  groundId          String
+  ground            Ground    @relation(fields: [groundId], references: [id])
+  slotId            String    @unique
+  slot              Slot      @relation(fields: [slotId], references: [id])
+  status            String    @default("pending")
+  totalPaise        Int
+  discountPaise     Int       @default(0)
+  couponCode        String?
+  razorpayOrderId   String?   @unique
+  razorpayPaymentId String?   @unique
+  whatsappSent      Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  confirmedAt       DateTime?
+  refundPaise       Int?
+  refundPercent     Int?
+  cancelledAt       DateTime?
+}
+
+model Coupon {
+  id              String  @id @default(cuid())
+  code            String  @unique
+  discountPercent Int
+  label           String
+  active          Boolean @default(true)
+}

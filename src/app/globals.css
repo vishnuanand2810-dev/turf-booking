@@ -2,26 +2,143 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 228 17% 7%; /* #0F1115 charcoal-black */
+    --foreground: 0 0% 100%;
+    
+    --card: 228 17% 12%; 
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 228 17% 10%;
+    --popover-foreground: 0 0% 100%;
+    
+    --primary: 151 100% 45%; /* Turf Green */
+    --primary-foreground: 228 17% 7%;
+    
+    --secondary: 228 17% 15%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 228 17% 15%;
+    --muted-foreground: 228 10% 65%;
+    
+    --accent: 151 100% 45%; /* Turf Green accent */
+    --accent-foreground: 228 17% 7%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 228 17% 15%;
+    --input: 228 17% 15%;
+    --ring: 151 100% 45%; /* Ring accent */
+    
+    --radius: 0.75rem;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-[#0A0D0C] text-white antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
+/* Glassmorphism utility */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
   }
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
+  }
+  .glass-hover {
+    @apply hover:bg-white/10 hover:border-white/20 hover:shadow-[0_8px_32px_rgba(0,230,118,0.15)] transition-all duration-300;
+  }
+  .hero-text-glow {
+    text-shadow: 0 0 40px rgba(245,166,35,0.3);
+  }
+}
+
+/* Turf Card Border Lighting Animation */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate-border-angle {
+  from {
+    --angle: 0deg;
+  }
+  to {
+    --angle: 360deg;
+  }
+}
+
+.turf-card-glow-wrapper {
+  position: relative;
+  outline: none;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.turf-card-glow-wrapper:hover,
+.turf-card-glow-wrapper:focus-visible,
+.turf-card-glow-wrapper:focus-within,
+.turf-card-glow-wrapper.is-selected {
+  box-shadow: 0 0 24px -4px rgba(245, 166, 35, 0.35);
+}
+
+.turf-card-border-light {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0%,
+    #F5A623 8%,
+    #FFC873 12%,
+    transparent 20%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  animation: rotate-border-angle 3.5s linear infinite;
+  animation-play-state: paused;
+  transition: opacity 200ms ease;
+  z-index: 20;
+}
+
+.turf-card-glow-wrapper:hover .turf-card-border-light,
+.turf-card-glow-wrapper:focus-visible .turf-card-border-light,
+.turf-card-glow-wrapper:focus-within .turf-card-border-light {
+  opacity: 1;
+  animation-play-state: running;
+  animation-duration: 3.5s;
+}
+
+.turf-card-glow-wrapper.is-selected .turf-card-border-light {
+  opacity: 1;
+  animation-play-state: running;
+  animation-duration: 2.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turf-card-border-light {
+    animation: none !important;
+    background: #F5A623 !important;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 1s ease-in-out infinite;
 }
