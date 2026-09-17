@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { OTPInput } from "@/components/OTPInput";
@@ -15,7 +15,7 @@ interface AuthModalProps {
   mode?: "signin" | "verify";
 }
 
-export function AuthModal({ isOpen, onClose, mode = "signin" }: AuthModalProps) {
+function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nav = useNav();
@@ -391,5 +391,13 @@ export function AuthModal({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
         )}
       </motion.div>
     </div>
+  );
+}
+
+export function AuthModal(props: AuthModalProps) {
+  return (
+    <Suspense fallback={null}>
+      <AuthModalContent {...props} />
+    </Suspense>
   );
 }

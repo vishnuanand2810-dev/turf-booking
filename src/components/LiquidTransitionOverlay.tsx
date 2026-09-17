@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useTransitionStore } from '@/store/transitionStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-export function LiquidTransitionOverlay() {
+function LiquidTransitionOverlayContent() {
   const { isTransitioning, clickPosition, setTransitioning } = useTransitionStore();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -43,5 +43,13 @@ export function LiquidTransitionOverlay() {
         />
       )}
     </AnimatePresence>
+  );
+}
+
+export function LiquidTransitionOverlay() {
+  return (
+    <Suspense fallback={null}>
+      <LiquidTransitionOverlayContent />
+    </Suspense>
   );
 }
