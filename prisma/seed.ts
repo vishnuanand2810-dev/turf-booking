@@ -13,12 +13,11 @@ const VERIFIED_TURF_IMAGES = [
 async function main() {
   console.log("Seeding database with Tamil Nadu District Turfs...");
 
-  // Clean existing tables
-  await prisma.booking.deleteMany();
-  await prisma.slot.deleteMany();
-  await prisma.ground.deleteMany();
-  await prisma.coupon.deleteMany();
-  await prisma.user.deleteMany();
+  const existingGroundCount = await prisma.ground.count();
+  if (existingGroundCount > 0) {
+    console.log("Database already seeded. Aborting to prevent duplicates.");
+    return;
+  }
 
   // Create active coupons
   await prisma.coupon.createMany({

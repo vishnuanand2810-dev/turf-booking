@@ -25,7 +25,20 @@ export const authOptions: NextAuthOptions = {
           throw new Error("INVALID_OTP");
         }
 
-        if (cleanOtp !== "123456" && process.env.NODE_ENV === "production") {
+        // Call our internal endpoint to verify the OTP with Twilio
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const verifyRes = await fetch(`${baseUrl}/api/auth/otp/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: credentials.phone, otp: cleanOtp }),
+        });
+        
+        if (!verifyRes.ok) {
+          throw new Error("INVALID_OTP");
+        }
+        
+        const verifyData = await verifyRes.json();
+        if (verifyData.verified !== true) {
           throw new Error("INVALID_OTP");
         }
 

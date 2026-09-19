@@ -30,6 +30,7 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const isPhoneValid = phone.length === 10;
   const isNameValid = name.trim().length > 1;
@@ -48,11 +49,37 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
 
   if (!isOpen) return null;
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const sendOtp = async (phoneNumber: string) => {
+    setIsSendingOtp(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: `+91${phoneNumber}` }),
+      });
+      const data = await res.json();
+      setIsSendingOtp(false);
+      
+      if (!res.ok) {
+        setError(data.error || "Failed to send OTP.");
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setIsSendingOtp(false);
+      setError("Network error occurred.");
+      return false;
+    }
+  };
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isPhoneValid) {
-      setStep("otp");
-      setError(null);
+      const success = await sendOtp(phone);
+      if (success) {
+        setStep("otp");
+      }
     }
   };
 
@@ -67,7 +94,7 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
         const verifyRes = await fetch("/api/user/verify-phone", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, otp: code }),
+          body: JSON.stringify({ phone: `+91${phone}`, otp: code }),
         });
         const data = await verifyRes.json();
         
@@ -96,18 +123,13 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
     }
 
     // signin mode
+    // We cannot verify Twilio OTP here because verification codes are single-use. 
+    // If we verify here, the NextAuth authorize callback will fail when it tries to verify again.
+    // Instead, we just visually succeed and move to the name step.
+    setOtpStatus("success");
     setTimeout(() => {
-      // Basic mock check, replace with real logic if needed
-      if (code === "123456" || process.env.NODE_ENV !== "production") {
-        setOtpStatus("success");
-        setTimeout(() => {
-          setStep("name");
-        }, 300);
-      } else {
-        setOtpStatus("error");
-        setTimeout(() => setOtpStatus("idle"), 500);
-      }
-    }, 400);
+      setStep("name");
+    }, 300);
   };
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
@@ -118,9 +140,9 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
 
     try {
       const res = await signIn("mobile-otp", {
-        phone,
+        phone: `+91${phone}`,
         name: name.trim(),
-        otp: otp || "123456",
+        otp: otp,
         redirect: false,
       });
 
@@ -288,9 +310,19 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
                     animate={{ opacity: 1, height: "auto", marginTop: 12 }}
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     type="submit"
-                    className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2 overflow-hidden"
+                    disabled={isSendingOtp}
+                    className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2 overflow-hidden disabled:opacity-50"
                   >
-                    Send OTP <ArrowRight className="w-4 h-4" />
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        Send OTP <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -312,7 +344,9 @@ function AuthModalContent({ isOpen, onClose, mode = "signin" }: AuthModalProps) 
                     onChange={setOtp}
                     onComplete={handleOtpComplete}
                     status={otpStatus}
-                    onResend={() => console.log("Resend requested")}
+                    onResend={async () => {
+                      await sendOtp(phone);
+                    }}
                   />
                 ) : (
                   <div className="flex items-center gap-2 px-4 py-3 bg-[#F5A623]/10 border border-[#F5A623]/30 rounded-xl">
